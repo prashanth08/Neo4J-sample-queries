@@ -1,0 +1,23 @@
+(1)MATCH (d:Dish)-[:REQUIRES]->(i:Ingredient) WHERE i.name="Salt" RETURN d.name ORDER BY d.name;
+(2)MATCH (d1:Dish)-[:REQUIRES]->(i1:Ingredient),(a:Allergen) WHERE (i1:Ingredient)-[:CONTAINS]->(a:Allergen{name:"Peanut"})WITH COLLECT(d1.name) AS D1
+MATCH (d:Dish)-[:REQUIRES]->(i:Ingredient)WHERE NOT (d.name IN D1)
+RETURN DISTINCT d.name
+ORDER BY d.name;
+(3)start n=node(*) OPTIONAL match ()-->(n:Ingredient)with count(*) as connections, n
+return n.name order by connections desc,n.name asc limit 1;
+(4)MATCH (d1:Dish), (d2:Dish) WHERE d1 <> d2
+OPTIONAL MATCH (d1)-[:REQUIRES]->(i)<-[:REQUIRES]-(d2) WITH d1, d2, count(i) as intersect
+OPTIONAL MATCH (d1)-[:REQUIRES]->(i) WITH d1, d2, intersect, collect(DISTINCT i) AS coll1
+OPTIONAL MATCH (d2)-[:REQUIRES]->(i) WITH d1, d2, collect(DISTINCT i) AS coll2, coll1, intersect
+WITH d1, d2, intersect, coll1, coll2, length(coll1 + filter(x IN coll2 WHERE NOT x IN coll1)) as union
+WHERE d1.name < d2.name
+RETURN d1.name,d2.name, union
+ORDER BY d1.name,d2.name;
+(5)MATCH (d1:Dish), (d2:Dish) WHERE d1 <> d2
+OPTIONAL MATCH (d1)-[:REQUIRES]->(i)<-[:REQUIRES]-(d2) WITH d1, d2, count(i) as intersect
+OPTIONAL MATCH (d1)-[:REQUIRES]->(i) WITH d1, d2, intersect, collect(DISTINCT i) AS coll1
+OPTIONAL MATCH (d2)-[:REQUIRES]->(i) WITH d1, d2, collect(DISTINCT i) AS coll2, coll1, intersect
+WITH d1, d2, intersect, coll1, coll2, length(coll1 + filter(x IN coll2 WHERE NOT x IN coll1)) as union
+WHERE d1.name < d2.name
+RETURN d1.name,d2.name, (1.0*intersect/union) AS Jaccard_Similarity
+ORDER BY d1.name,d2.name;
